@@ -420,6 +420,7 @@ export async function getAvailableApiSites(filterAdult = false): Promise<ApiSite
     }));
   
   // 如果需要过滤成人内容，则排除标记为成人内容的资源站
+  console.log('Filter adult content:', filterAdult);
   if (filterAdult) {
     sites = sites.filter((s) => !s.is_adult);
   }
@@ -429,6 +430,7 @@ export async function getAvailableApiSites(filterAdult = false): Promise<ApiSite
     name: s.name,
     api: s.api,
     detail: s.detail,
+    is_adult: s.is_adult
   }));
 }
 
