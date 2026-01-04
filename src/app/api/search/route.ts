@@ -68,6 +68,7 @@ export async function GET(request: Request) {
     const availableSites = finalShouldFilter 
       ? await getAvailableApiSites(true) // 过滤成人内容
       : await getAvailableApiSites(false); // 不过滤成人内容
+    console.log('Available sites for search:', availableSites);
     
     if (!availableSites || availableSites.length === 0) {
       const cacheTime = await getCacheTime();
