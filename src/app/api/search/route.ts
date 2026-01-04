@@ -94,6 +94,7 @@ export async function GET(request: Request) {
     const cacheTime = await getCacheTime();
     const response = NextResponse.json(
       { 
+        results: searchResults,
         regular_results: searchResults,
         adult_results: [] // 始终为空，因为成人内容在源头就被过滤了
       },
