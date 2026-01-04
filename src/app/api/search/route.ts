@@ -111,6 +111,7 @@ export async function GET(request: Request) {
   } catch (error) {
     const response = NextResponse.json(
       { 
+        results: [],
         regular_results: [],
         adult_results: [],
         error: '搜索失败' 
