@@ -68,7 +68,7 @@ export async function GET(request: Request) {
     const availableSites = finalShouldFilter 
       ? await getAvailableApiSites(true) // 过滤成人内容
       : await getAvailableApiSites(false); // 不过滤成人内容
-    console.log('Available sites for search:', availableSites);
+    // console.log('Available sites for search:', availableSites);
     
     if (!availableSites || availableSites.length === 0) {
       const cacheTime = await getCacheTime();
@@ -88,6 +88,7 @@ export async function GET(request: Request) {
     // 搜索所有可用的资源站（已根据用户设置动态过滤）
     const searchPromises = availableSites.map((site) => searchFromApi(site, query));
     const searchResults = (await Promise.all(searchPromises)).flat();
+    console.log(`Search results for query "${query}":`, searchResults);
 
     // 所有结果都作为常规结果返回，因为成人内容源已经在源头被过滤掉了
     const cacheTime = await getCacheTime();
