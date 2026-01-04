@@ -36,6 +36,31 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Remove previous GHCR package versions
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+          PKG="${{ steps.image_name.outputs.name }}"
+          OWNER="${{ github.repository_owner }}"
+          PREFIX=""
+          IDS=$(gh api --silent /users/$OWNER/packages/container/$PKG/versions --jq '.[].id' 2>/dev/null || true)
+          if [ -n "$IDS" ]; then
+            PREFIX="/users/$OWNER"
+          else
+            IDS=$(gh api --silent /orgs/$OWNER/packages/container/$PKG/versions --jq '.[].id' 2>/dev/null || true)
+            if [ -n "$IDS" ]; then
+              PREFIX="/orgs/$OWNER"
+            fi
+          fi
+          if [ -n "$IDS" ]; then
+            echo "$IDS" | while read id; do
+              echo "Deleting package version: $id"
+              gh api -X DELETE "$PREFIX/packages/container/$PKG/versions/$id" || true
+            done
+          else
+            echo "No package versions found to delete."
+          fi
+
       - name: Log in to Container Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
