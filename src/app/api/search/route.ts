@@ -64,6 +64,7 @@ export async function GET(request: Request) {
 
     // 根据用户设置和明确请求决定最终的过滤策略
     const finalShouldFilter = shouldFilterAdult || !includeAdult;
+    console.log(`User: ${userName || 'Guest'}, Should filter adult content: ${finalShouldFilter}`);
     
     // 使用动态过滤方法，但不依赖缓存，实时获取设置
     const availableSites = finalShouldFilter 
