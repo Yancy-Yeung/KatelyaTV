@@ -73,6 +73,7 @@ export async function GET(request: Request) {
     if (!availableSites || availableSites.length === 0) {
       const cacheTime = await getCacheTime();
       const response = NextResponse.json({ 
+        results: [],
         regular_results: [], 
         adult_results: [] 
       }, {
