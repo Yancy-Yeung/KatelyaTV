@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # KatelyaTV 应用服务
   katelyatv:
-    image: ghcr.io/katelya77/katelyatv:latest
+    image: ghcr.io/yancy-yeung/katelyatv:latest
     ports:
       - "3000:3000"
     environment:

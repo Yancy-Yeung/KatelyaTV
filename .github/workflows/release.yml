@@ -71,8 +71,8 @@ jobs:
 
             #### Docker 部署（推荐）
             ```bash
-            docker pull ghcr.io/katelya77/katelyatv:${{ github.ref_name }}
-            docker run -d --name katelyatv -p 3000:3000 --env PASSWORD=your_password ghcr.io/katelya77/katelyatv:${{ github.ref_name }}
+            docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:${{ github.ref_name }}
+            docker run -d --name katelyatv -p 3000:3000 --env PASSWORD=your_password ghcr.io/${{ github.repository_owner }}/katelyatv:${{ github.ref_name }}
             ```
 
             #### Cloudflare Pages 部署
@@ -98,10 +98,10 @@ jobs:
 
             ### 🔗 相关资源
 
-            - [项目文档](https://github.com/katelya77/KatelyaTV#readme)
-            - [问题反馈](https://github.com/katelya77/KatelyaTV/issues)
-            - [功能讨论](https://github.com/katelya77/KatelyaTV/discussions)
-            - [贡献指南](https://github.com/katelya77/KatelyaTV/blob/main/CONTRIBUTING.md)
+            - [项目文档](https://github.com/${{ github.repository }}#readme)
+            - [问题反馈](https://github.com/${{ github.repository }}/issues)
+            - [功能讨论](https://github.com/${{ github.repository }}/discussions)
+            - [贡献指南](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md)
 
             ### 📝 更新日志
 
@@ -138,8 +138,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/katelya77/katelyatv:${{ github.ref_name }}
-            ghcr.io/katelya77/katelyatv:latest
+            ghcr.io/${{ github.repository_owner }}/katelyatv:${{ github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/katelyatv:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64

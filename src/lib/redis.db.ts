@@ -85,14 +85,45 @@ export class RedisStorage implements IStorage {
     return val ? (JSON.parse(val) as PlayRecord) : null;
   }
 
+  /* 新存储播放记录,去重 */
   async setPlayRecord(
     userName: string,
     key: string,
-    record: PlayRecord
+    record: PlayRecord,
   ): Promise<void> {
-    await withRetry(() =>
-      this.client.set(this.prKey(userName, key), JSON.stringify(record))
+    // 获取所有播放记录
+    const allRecords = await this.getAllPlayRecords(userName);
+
+    // 找到所有 title 相同的记录（排除当前 key）
+    const duplicates = Object.entries(allRecords).filter(
+      ([existingKey, existingRecord]) =>
+        existingRecord.title === record.title && existingKey !== key,
     );
+
+    // 删除重复的记录
+    for (const [dupKey] of duplicates) {
+      await withRetry(() => this.client.del(this.prKey(userName, dupKey)));
+    }
+
+    // 设置新的记录（如果 key 已存在，会覆盖）
+    await withRetry(() =>
+      this.client.set(this.prKey(userName, key), JSON.stringify(record)),
+    );
+
+    // 重新获取所有记录（包括新设置的）
+    const updatedRecords = await this.getAllPlayRecords(userName);
+    const entries = Object.entries(updatedRecords);
+
+    // 如果超过 30 条，按 save_time 降序排序（最新的在前），删除多余的
+    if (entries.length > 30) {
+      entries.sort((a, b) => b[1].save_time - a[1].save_time); // 降序，最新的在前
+      const toDelete = entries.slice(30); // 从第31个开始删除
+      for (const [dupKey] of toDelete) {
+        await withRetry(() =>
+          this.client.del(this.prKey(userName, dupKey)),
+        );
+      }
+    }
   }
 
   async getAllPlayRecords(
@@ -237,11 +268,11 @@ export class RedisStorage implements IStorage {
     const data = await withRetry(() =>
       this.client.get(this.userSettingsKey(userName))
     );
-    
+
     if (data) {
       return JSON.parse(ensureString(data));
     }
-    
+
     // 如果用户设置不存在，返回默认设置
     const defaultSettings: UserSettings = {
       filter_adult_content: true, // 默认开启成人内容过滤
@@ -250,7 +281,7 @@ export class RedisStorage implements IStorage {
       auto_play: true,
       video_quality: 'auto'
     };
-    
+
     return defaultSettings;
   }
 
@@ -284,8 +315,10 @@ export class RedisStorage implements IStorage {
 
   async addSearchHistory(userName: string, keyword: string): Promise<void> {
     const key = this.shKey(userName);
+
     // 先去重
     await withRetry(() => this.client.lRem(key, 0, ensureString(keyword)));
+
     // 插入到最前
     await withRetry(() => this.client.lPush(key, ensureString(keyword)));
     // 限制最大长度
@@ -305,7 +338,7 @@ export class RedisStorage implements IStorage {
   async getAllUsers(): Promise<User[]> {
     const keys = await withRetry(() => this.client.keys('u:*:pwd'));
     const ownerUsername = process.env.USERNAME || 'admin';
-    
+
     const usernames = keys
       .map((k) => {
         const match = k.match(/^u:(.+?):pwd$/);
@@ -428,10 +461,43 @@ function getRedisClient(): RedisClientType {
   let client: RedisClientType | undefined = (global as any)[globalKey] || (global as any)[legacyKey];
 
   if (!client) {
-    const url = process.env.REDIS_URL;
+    let url = process.env.REDIS_URL;
     if (!url) {
       throw new Error('REDIS_URL env variable not set');
     }
+
+    // 处理单独的 REDIS_PASSWORD 环境变量
+    const redisPassword = process.env.REDIS_PASSWORD;
+    if (redisPassword) {
+      // 解析 URL 并添加密码
+      try {
+        const urlObj = new URL(url);
+        // 如果 URL 中没有密码，添加密码
+        if (!urlObj.password) {
+          urlObj.password = redisPassword;
+          url = urlObj.toString();
+        }
+      } catch (err) {
+        console.error('Failed to parse REDIS_URL:', err);
+      }
+    }
+
+    // 处理单独的 REDIS_DATABASE 环境变量
+    const redisDatabase = process.env.REDIS_DATABASE;
+    if (redisDatabase) {
+      try {
+        const urlObj = new URL(url);
+        // 如果 URL 中没有数据库号，添加数据库号
+        if (!urlObj.pathname || urlObj.pathname === '/') {
+          urlObj.pathname = `/${redisDatabase}`;
+          url = urlObj.toString();
+        }
+      } catch (err) {
+        console.error('Failed to parse REDIS_URL for database:', err);
+      }
+    }
+
+    console.log('Connecting to Redis:', url.replace(/:[^:@]+@/, ':****@')); // 隐藏密码输出
 
     // 创建客户端，配置重连策略
     client = createClient({
