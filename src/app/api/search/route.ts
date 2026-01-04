@@ -15,6 +15,7 @@ export async function OPTIONS() {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
+  console.log('Search query:', query);
   
   // 从 Authorization header 或 query parameter 获取用户名
   let userName: string | undefined = searchParams.get('user') || undefined;
@@ -109,6 +110,7 @@ export async function GET(request: Request) {
     );
     return addCorsHeaders(response);
   } catch (error) {
+    console.error('Search error:', error);
     const response = NextResponse.json(
       { 
         results: [],
